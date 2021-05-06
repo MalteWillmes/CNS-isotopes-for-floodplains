@@ -1,9 +1,6 @@
 
 # Libraries ---------------------------------------------------------------
-
-
 library(tidyverse)
-library(dplyr)
 library(scales)
 library(cowplot)
 library(lubridate)
@@ -19,9 +16,8 @@ library(sjstats)
 
 # Preparing various data sets for different analysis ----------------------
 
-
-data<-read.csv("C:/Users/mirbe/Box Sync/Isodope/Isodope/YoloBypass/Data/RData/UPDATEDallyears99_17.csv")
-ldadata<-read.csv("C:/Users/mirbe/Box Sync/Isodope/Isodope/YoloBypass/Data/RData/LDA_allyears.csv")
+data<-read.csv(here('Data','UPDATEDallyears99_17.csv'))
+ldadata<-read.csv(here('Data','LDA_allyears.csv'))
 
 table(data$Year)
 
@@ -207,7 +203,7 @@ data7<-data7[data7$Year !="1999",]
 model1<- lmer(d34S ~ R_FP + (1|subsite) + (1|WDN), data = data7, REML = FALSE)
 summary(model1) ## best fit model based on multiple variations in r markdown
 p_value(model1)
-r2(model1)
+performance::r2(model1)
 
 
 model.null<-lmer(d34S ~ R_FP +  (1|WDN), data = data7, REML = FALSE)
@@ -236,7 +232,7 @@ m1<- lmer(d34S ~ R_FP + (1|subsite) + (1|WDN), data = data6, REML = FALSE)
 
 
 summary(m1) ## best fit model with the cages being an interaction of site
-p_value(m1)
+parameters::p_value(m1)
 
 m.null<-lmer(d34S ~ R_FP +  (1|WDN), data = data6, REML = FALSE)
 anova(m1, m.null) ##biggest effect with subsite removed
@@ -252,8 +248,8 @@ anova(m1, m.null3) ##small effect without water year type. Larger effect on musc
 ###for carbon stomach contents
 modelC<- lmer(d13C ~ R_FP + (1|subsite) + (1|WDN), data = data7, REML = FALSE)
 summary(modelC) ## best fit model based on multiple variations in r markdown
-p_value(modelC)
-r2(modelC)
+parameters::p_value(modelC)
+performance::r2(modelC)
 
 
 model.nullC<-lmer(d13C ~ R_FP +  (1|WDN), data = data7, REML = FALSE)
@@ -273,7 +269,7 @@ mC<- lmer(d13C ~ R_FP + (1|subsite) + (1|WDN), data = data6, REML = FALSE)
 
 
 summary(mC) 
-p_value(m1)
+parameters::p_value(m1)
 
 mC.null<-lmer(d13C ~ R_FP +  (1|WDN), data = data6, REML = FALSE)
 anova(mc, mC.null) ##biggest effect with subsite removed
@@ -292,33 +288,47 @@ t.test(d15N ~ R_FP, data2, mu=0,alt = "two.sided", conf = 0.95, var.eq = F, pair
 
 
 # Otolith analysis using on d34S ------------------------------------------
-#Clear the workspace while developing the script
-rm(list = ls())
-
 #Custom function
 addline_format <- function(x,...){
   gsub('\\s','\n',x)
 }
-
 #read in data
-salmon_readin <-read.xlsx(here('salmon_s_data.xlsx'), sheet="Data")
-tissue_readin <-read.xlsx(here('salmon_s_data.xlsx'), sheet="tissue")
-
-
-
+salmon_readin <-read.xlsx(here('Data','salmon_s_data.xlsx'), sheet="Data")
+tissue_readin <-read.xlsx(here('Data','salmon_s_data.xlsx'), sheet="tissue")
 
 #clean data
 salmon_data <- salmon_readin %>%
   data.frame()%>%
-  dplyr::select(Fish_ID, Sample, Spot_number, age, distance, Spot_designation, d34Scor_vcdt, wStdErr_95T_permil)%>%
+  dplyr::select(Fish_ID, Sample, Spot_number, age, distance, changedis, Spot_designation, d34Scor_vcdt, wStdErr_95T_permil)%>%
   group_by(Fish_ID, Spot_designation)%>%
   mutate(region_average=mean(d34Scor_vcdt, na.rm=TRUE),
          region_sd=sd(d34Scor_vcdt, na.rm=TRUE))%>%
-  ungroup()
+  ungroup()%>%
+  drop_na(Spot_designation)
 
 tissue_data <-tissue_readin
 
-##Figure 6
+#Plot all Salmon S profiles
+p_salmon <- ggplot(data= salmon_data)+
+  annotate("rect",ymin = -0.29, ymax = 4.71, xmin = -Inf, xmax = Inf,  fill = "steelblue3", alpha=.1)+
+  annotate("rect",ymin = -5.74, ymax = -1.2, xmin = -Inf, xmax = Inf, fill = 'forestgreen', alpha=.1)+
+  geom_vline(aes(xintercept=changedis), linetype="dashed", color="black")+
+  geom_smooth(aes(x=distance, y=d34Scor_vcdt, group=Fish_ID), span=0.2, color="grey95", fill="grey95", alpha=0.5)+
+  geom_pointrange(aes(x=distance, y=d34Scor_vcdt, ymax = d34Scor_vcdt +wStdErr_95T_permil, ymin = d34Scor_vcdt-wStdErr_95T_permil, 
+                      fill=Spot_designation), shape=21, color="black")+
+  theme_classic()+
+  theme (panel.background = element_rect(colour = "black"), 
+         legend.position = "bottom",
+         legend.title=element_blank(),
+         panel.grid.major = element_blank(),
+         panel.grid.minor = element_blank(),
+         strip.background = element_blank())+
+  scale_x_continuous("Distance (�m)")+
+  scale_y_continuous(name= expression(paste(delta^"34", "S"["Otolith"]," [??? VCDT]")),  breaks = scales::pretty_breaks(n = 5))+
+  scale_fill_manual(values=c("firebrick","palegreen3","orange","steelblue", "grey"))+
+  facet_rep_wrap(~Fish_ID, ncol=1, repeat.tick.labels = 'all')
+p_salmon
+ggsave(plot=p_salmon, "salmon_s_profiles.png", width = 6, height = 12)
 
 #Plot 2 Salmon S profiles
 p_salmon2 <- ggplot(data= salmon_data%>%filter(Fish_ID=="NP163500"|Fish_ID=="NP163668"))+
@@ -335,42 +345,60 @@ p_salmon2 <- ggplot(data= salmon_data%>%filter(Fish_ID=="NP163500"|Fish_ID=="NP1
          panel.grid.major = element_blank(),
          panel.grid.minor = element_blank(),
          strip.background = element_blank())+
-  scale_x_continuous("Distance (µm)")+
-  scale_y_continuous(name= expression(paste(delta^"34", "S"["Otolith"]," [‰ VCDT]")),  breaks = scales::pretty_breaks(n = 5))+
+  scale_x_continuous("Distance (�m)")+
+  scale_y_continuous(name= expression(paste(delta^"34", "S"["Otolith"]," [??? VCDT]")),  breaks = scales::pretty_breaks(n = 5))+
   scale_fill_manual(values=c("firebrick","palegreen3","orange","steelblue", "grey"))+
   facet_rep_wrap(~Fish_ID, ncol=1, repeat.tick.labels = 'all')
 p_salmon2
 ggsave(plot=p_salmon2, "salmon2_s_profiles.png", width = 6, height = 6)
 
-
-
-#Tissue comparison (stomach, muscle, and otolith) 
+#Tissue comparison
 salmon_tissue <- salmon_data %>%
   filter(Spot_designation=="River"| Spot_designation=="Floodplain")%>%
   group_by(Fish_ID)%>%
-  mutate (d34_oto=case_when (distance==max(distance, na.rm=T)~ d34Scor_vcdt))%>%
+  mutate (Otolith_edge=case_when (distance==max(distance, na.rm=T)~ d34Scor_vcdt))%>%
+  mutate (Otolith=mean(d34Scor_vcdt, na.rm=TRUE))%>%
   ungroup()%>%
-  distinct(Fish_ID, d34_oto, .keep_all=T) %>%
-  dplyr::select(Fish_ID,Sample, d34_oto)%>%
+  distinct(Fish_ID, Otolith_edge, Otolith, .keep_all=T) %>%
+  dplyr::select(Fish_ID,Sample, Otolith, Otolith_edge)%>%
   drop_na()%>%
   left_join(tissue_data, by="Sample")%>%
-  gather(Tissue,d34, 3:5)
+  gather(Tissue,d34, 3:6)
 
-###Figure 7
-p_tissue <- ggplot(data= salmon_tissue)+
-  geom_point(aes(x=Fish_ID, y=d34, shape=Tissue, fill=Tissue))+
+
+p_tissue <- ggplot(data= salmon_tissue%>%filter(!Tissue=="Otolith"))+
+  # geom_point(aes(x=Fish_ID, y=d34, fill=Tissue), shape=21, size=2)+
+  geom_jitter(aes(x=Fish_ID, y=d34, fill=Tissue), pch = 21, size = 2, width = 0.07)+
   theme_classic()+
   theme (panel.background = element_rect(colour = "black"), 
-         legend.position = "top",
+         legend.position = "bottom",
+         legend.title=element_blank(),
+         axis.title.x = element_blank(),
          panel.grid.major = element_blank(),
          panel.grid.minor = element_blank(),
          strip.background = element_blank())+
-  scale_x_discrete("Fish ID")+
-  scale_y_continuous(name= expression(paste(delta^"34", "S"["Tissue"]," [VCDT ‰]")),  breaks = scales::pretty_breaks(n = 10))+
-  scale_fill_manual(values = c("steelblue", "grey50", "palegreen3"))+
-  scale_shape_manual(values=c(21,22,23))
-p_tissue #final figure
-ggsave(plot=p_tissue , "tissue_comparison.png", width = 4, height = 4)
+  geom_hline(yintercept=0, linetype="dashed")+
+  scale_fill_manual(labels = c("Muscle", "Otolith Edge" , "Stomach Contents"), values = c( "black", "gold2","green3")) + 
+  geom_hline(yintercept = 0, linetype = "dashed", color ="black") +
+  scale_x_discrete(labels=addline_format(c("NP16201" = "River1 (NP16201)", "NP163500" = "River2 (NP163500)",
+                                           "NP163653" = "Floodplain1 (NP163653)", "NP163668" = "Floodplain2 (NP163668)",
+                                           "NP163722" = "Floodplain3 (NP163722)")))+
+  scale_y_continuous(name= expression(paste(delta^"34", "S"["Tissue"]," [??? VCDT]")),  breaks = scales::pretty_breaks(n = 10))
+p_tissue 
+ggsave(plot=p_tissue , "tissue_comparison.png", width = 5, height = 4)
+
+
+#Output
+salmon_s_export <-salmon_data%>%
+  distinct (Fish_ID, Spot_designation,.keep_all=T)%>%
+  group_by(Spot_designation)%>%
+  mutate(d34s_average=mean(region_average, na.rm=TRUE),
+         d34s_sd=sd(region_average, na.rm=TRUE))%>%
+  dplyr::select(Spot_designation, d34s_average, d34s_sd)%>%
+  ungroup()%>%
+  distinct(Spot_designation, .keep_all=TRUE)
+
+
 
 
 # Appendix plots and tables -----------------------------------------------
@@ -378,11 +406,7 @@ ggsave(plot=p_tissue , "tissue_comparison.png", width = 4, height = 4)
 # Flow data from the Central Valley 2014-2017 -----------------------------
 ##Data here was pulled from CDEC then cleaned into a data set 
 
-
-flow<-read.csv("C:/Users/mirbe/Box Sync/Isodope/Isodope/YoloBypass/Data/RData/fremontweirflow2014_17.csv")
-
-
-
+flow<-read.csv(here('Data','fremontweirflow2014_17.csv'))
 
 ###Sulfur Table Appendix C 
 
@@ -457,17 +481,11 @@ p_salmon <- ggplot(data= salmon_data)+
          panel.grid.minor = element_blank(),
          strip.background = element_blank())+
   scale_x_continuous("Distance (µm)")+
-  scale_y_continuous(name= expression(paste(delta^"34", "S"["Otolith"]," [‰ VCDT]")),  breaks = scales::pretty_breaks(n = 5))+
+  scale_y_continuous(name= expression(paste(delta^"34", "S"["Otolith"]," [??? VCDT]")),  breaks = scales::pretty_breaks(n = 5))+
   scale_fill_manual(values=c("firebrick","palegreen3","orange","steelblue", "grey"))+
   facet_rep_wrap(~Fish_ID, ncol=1, repeat.tick.labels = 'all')
 p_salmon
 ggsave(plot=p_salmon, "salmon_s_profiles.png", width = 6, height = 12)
-
-
-
-
-
-
 
 
 
