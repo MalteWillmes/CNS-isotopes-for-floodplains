@@ -587,7 +587,19 @@ boxplotN<- ggplot(data=data1,aes(x=Site, y = d15N)) +
 boxplotN
 ggsave(filename="Output/nitrostomachplot_highres.png", plot=boxplotN, height=6, width=7, units="in", dpi=500)
 
+nitroallyears<- ggplot (data5,aes(x= Day, y = d15N, color = Tissue)) + 
+  geom_smooth (span = 0.75)  + geom_point() +
+  labs( y = expression(paste(delta^"15", "N ","(\211 AIR)"))) +
+  scale_color_manual(labels = c("Muscle Tissue", "Stomach Contents"), values = c( "black", "green3"))+
+  facet_grid( Year ~ .) + 
+  theme_bw() +  
+  theme(legend.position = "bottom", legend.title = element_blank()) +
+  theme(legend.background =  element_rect(fill="white", size=0.5, linetype="solid", colour ="black")) +
+  theme(plot.title = element_text(hjust = 0.5),axis.text.x = element_text(face="bold", size=12, color = "black"),
+        axis.text.y = element_text(face="bold", size=12, color = "black"), axis.title.x = element_text(color="black", size =16, vjust=-0.35),
+        axis.title.y = element_text(color="black" , size = 14, vjust=0.35))
 
+ggsave(filename="Output/nitrodep_highres.png", plot=nitroallyears, height=6, width=7, units="in", dpi=500)
 ###Appendic H
 
 #Plot all Salmon S profiles
