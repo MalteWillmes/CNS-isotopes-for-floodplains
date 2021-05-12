@@ -544,7 +544,7 @@ boxplotN + theme_bw() + facet_grid(WDN ~ .) + theme(legend.position = "bottom", 
 
 nitroallyears<- ggplot (data5,aes(x= Day, y = d15N, color = Tissue)) + 
   geom_smooth (span = 0.75)  + geom_point() +
-  labs( y = expression(paste(delta^"15", "N","(\211 Air)"))) +
+  labs( y = expression(paste(delta^"15", "N ","(\211 Air)"))) +
   scale_color_manual(labels = c("Muscle Tissue", "Stomach Contents"), values = c( "black", "green3"))
 
 
@@ -553,6 +553,40 @@ nitroallyears +
   theme_bw() +  
   theme(legend.position = "bottom", legend.title = element_blank()) +
   theme(legend.background =  element_rect(fill="white", size=0.5, linetype="solid", colour ="black"))
+
+sacboxN<- ggplot(data=sac,aes(x=loc, y = d15N)) + 
+  geom_boxplot( outlier.shape=NA, lwd=0.8) +
+  geom_point(position=position_jitterdodge(0.5),  alpha = 0.3, aes(fill=loc)) +
+  labs(x = "", y =  expression(paste(delta^"15", "N ","(\211 AIR)")))  +
+  theme_bw() + theme(legend.position = "bottom", legend.title= element_blank()) + 
+  scale_x_discrete(labels=c( "Yolo Bypass" = "Yolo \n Bypass",
+                             "Caged in Yolo Bypass" = "Caged \nin Yolo Bypass" ,
+                             "Sacramento" = "Sacramento \n River",
+                             "River Caged" = "Caged \nin Sac. River")) +
+  scale_color_manual(labels = c("dry", "normal", "wet"), values = c( "tomato2", "plum3", "steelblue2")) +
+  theme(plot.title = element_text(hjust = 0.5),axis.text.x = element_text(face="bold", size=12, color = "black"),
+        axis.text.y = element_text(face="bold", size=12, color = "black"), axis.title.x = element_text(color="black", size =16, vjust=-0.35),
+        axis.title.y = element_text(color="black" , size = 14, vjust=0.35),
+        legend.position="none") +
+  theme(legend.text = element_text(size = 12, face = "bold"))
+sacboxN
+ggsave(filename="Output/nmus_highres.png", plot=sacboxN, device="png", height=6, width=8, units="in", dpi=500)
+
+boxplotN<- ggplot(data=data1,aes(x=Site, y = d15N)) + 
+  geom_boxplot(aes(color = WDN), outlier.shape=NA, lwd = 0.8,position = position_dodge2(width=0.75, preserve = "single")) +
+  geom_point(position=position_jitterdodge(0.05), aes(group=WDN, fill=WDN), alpha = 0.3, pch = 21) +
+  labs(x = "", y =  expression(paste(delta^"15", "N ","(\211 AIR)")))  +
+  theme_bw() + theme(legend.position = "bottom", legend.title= element_blank()) + 
+  scale_x_discrete(labels=c("Yolo Bypass" = "Yolo \n Bypass", "Sacramento" = "Sacramento \n River", "River Caged" = "Caged \nin Sac. River")) +
+  scale_color_manual(labels = c("Drought", "Average", "Wet"), values = c( "tomato2", "plum3", "steelblue2")) +
+  scale_fill_manual(labels = c("Drought", "Average", "Wet"), values = c( "tomato2", "plum3", "steelblue2")) +
+  theme(plot.title = element_text(hjust = 0.5),axis.text.x = element_text(face="bold", size=12, color = "black"),
+        axis.text.y = element_text(face="bold", size=12, color = "black"), axis.title.x = element_text(color="black", size =16, vjust=-0.35),
+        axis.title.y = element_text(face="bold", color="black" , size = 12, vjust=0.35)) +
+  theme(legend.text = element_text(size = 12, face = "bold"))
+boxplotN
+ggsave(filename="Output/nitrostomachplot_highres.png", plot=boxplotN, height=6, width=7, units="in", dpi=500)
+
 
 ###Appendic H
 
