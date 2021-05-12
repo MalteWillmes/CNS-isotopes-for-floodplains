@@ -1,4 +1,3 @@
-
 # Libraries ---------------------------------------------------------------
 library(tidyverse)
 library(scales)
@@ -11,13 +10,12 @@ library(openxlsx) # read in excel files xlsx
 library(pals) #color scales
 library(lemon)#facet axis 
 library(sjstats)
-
-
+library(ggpubr)
 
 # Preparing various data sets for different analysis ----------------------
-
 data<-read.csv(here('Data','UPDATEDallyears99_17.csv'))
 ldadata<-read.csv(here('Data','LDA_allyears.csv'))
+
 
 table(data$Year)
 
@@ -106,7 +104,7 @@ qqline(ldadata$d34S, col = "steelblue", lwd = 2)
 ###plot LDA data 
 ###This data includes both wild caught and caged reared juvenile Chinook Salmon in all years sample collection was possible. stomach contents must have both a d13C and d34S value. 
 
-##Figure 4
+##Figure 3
 ldaplot<- ggplot(data = ldadata, aes(x =d13C, y=d34S, color = Site, shape = Exp_Wild)) +
   geom_point(size = 2.5, alpha = 0.8) +
   stat_ellipse(aes(group= Site)) +
@@ -114,11 +112,13 @@ ldaplot<- ggplot(data = ldadata, aes(x =d13C, y=d34S, color = Site, shape = Exp_
   scale_color_manual(name = "Site",labels = c("Sacramento River", "Floodplain"), values = c( "blue2", "green3")) +
   scale_shape_manual(labels = c("Experimental", "Wild"), values = c(19,21)) +
   coord_cartesian(xlim = c(-40, -20), ylim = c(-12,15)) + labs( x=expression(paste(delta^"13", "C"["Inverts "],"(\211 VPDB)")), 
-                                                                y = expression(paste(delta^"34", "S"["Inverts "],"(\211 VCDT)")))
-ldaplot + theme_bw() +
-  theme(legend.position=c(0.175,0.89), legend.background =  element_rect(fill="white", size=0.5, 
-                                                                         linetype="solid", colour ="black")) + guides(shape = FALSE) 
-
+                                                                y = expression(paste(delta^"34", "S"["Inverts "],"(\211 VCDT)")))+
+  theme_bw() +
+  theme(legend.position=c(0.175,0.89), 
+        legend.background =  element_rect(fill="white", size=0.5, 
+        linetype="solid", colour ="black")) + guides(shape = FALSE) 
+ldaplot
+ggsave("Output/ldaplot.png", ldaplot, width=8, height=6)
 ###LDA test
 
 fit <- lda(Site ~  d34S + d13C, data =ldadata, CV=TRUE)
@@ -133,28 +133,61 @@ diag(prop.table(ct, 1))
 summary(fit)
 sum(diag(prop.table(ct)))
 
-plot(fit)
-
 
 # Figure 4 ----------------------------------------------------------------
 
-boxplot<- ggplot(data=data1, aes(x=loc, y = d34S, color = Tissue)) +
-  geom_boxplot() +  
-  labs(x = "", y =  expression(paste(delta^"34", "S","(\211 VCDT)")))  +
+# boxplot<- ggplot(data=data1, aes(x=loc, y = d34S, color = Tissue)) +
+#   geom_boxplot() +  
+#   labs(x = "", y =  expression(paste(delta^"34", "S","(\211 VCDT)")))  +
+#   geom_hline(yintercept = 0, linetype="dashed", color ="black") +
+#   scale_color_manual(labels = c("Muscle Tissue", "Stomach Contents"), values = c( "black", "green3")) + 
+#   scale_x_discrete(labels=c("Yolo Bypass" = "Yolo \n Bypass", "Sacramento" = "Sacramento \n  River", "River Caged" = "Caged \n in Sac. River"))
+# boxplot + theme_bw() + facet_grid(WDN ~ .) + theme(legend.position = "bottom", legend.title= element_blank())
+# 
+# boxplotC<- ggplot(data=data1, aes(x=loc, y = d13C, color = Tissue)) +
+#   geom_boxplot() +  
+#   labs(x = "", y =  expression(paste(delta^"13", "C","(\211 VPBD)")))  +
+#   scale_color_manual(labels = c("Muscle Tissue", "Stomach Contents"), values = c( "black", "green3"))
+# boxplotC + theme_bw() + facet_grid(WDN ~ .) + theme(legend.position = "bottom", legend.title= element_blank()) +
+#   scale_x_discrete(labels=c("Yolo Bypass" = "Yolo \n Bypass", "Sacramento" = "Sacramento \n River", "River Caged" = "Caged \nin Sac. River"))
+# 
+# csboxplot<- plot_grid((boxplotC + theme_bw() + facet_grid(WDN ~ .) +  scale_x_discrete(labels=c("Yolo Bypass" = "Yolo Bypass", "Sacramento" = "Sacramento  River", "River Caged" = "Caged in Sac. River")) + theme(legend.position= "none")) , (boxplot + theme_bw() + facet_grid(WDN ~ .)+ theme(legend.position= "none") ), align = 'h', labels =c("A", "B"), nrow = 1 )
+# csboxplot ##final figure
+
+boxplot<- ggplot(data=data1,aes(x=Site, y = d34S)) + 
+  geom_boxplot(aes(color = WDN), outlier.shape=NA, lwd=0.8, position = position_dodge2(width=0.75, preserve = "single")) +
+  geom_point(position=position_jitterdodge(0.05), aes(group=WDN, fill=WDN), alpha = 0.3, pch = 21) +
+  labs(x = "", y =  expression(paste(delta^"34", "S ","(\211 VCDT)")))  +
   geom_hline(yintercept = 0, linetype="dashed", color ="black") +
-  scale_color_manual(labels = c("Muscle Tissue", "Stomach Contents"), values = c( "black", "green3")) + 
-  scale_x_discrete(labels=c("Yolo Bypass" = "Yolo \n Bypass", "Sacramento" = "Sacramento \n  River", "River Caged" = "Caged \n in Sac. River"))
-boxplot + theme_bw() + facet_grid(WDN ~ .) + theme(legend.position = "bottom", legend.title= element_blank())
+  theme_bw() + theme(legend.position = "bottom", legend.title= element_blank()) + 
+  scale_x_discrete(labels=c("Yolo Bypass" = "Yolo \n Bypass", "Sacramento" = "Sacramento \n River", "River Caged" = "Caged \nin Sac. River")) +
+  scale_color_manual(labels = c("dry", "normal", "wet"), values = c( "tomato2", "plum3", "steelblue2")) +
+  scale_fill_manual(labels = c("dry", "normal", "wet"), values = c( "tomato2", "plum3", "steelblue2")) +
+  theme(plot.title = element_text(hjust = 0.5),axis.text.x = element_text(face="bold", size=12, color = "black"),
+        axis.text.y = element_text(face="bold", size=12, color = "black"), axis.title.x = element_text(color="black", size =16, vjust=-0.35),
+        axis.title.y = element_text(color="black" , size = 14, vjust=0.35)) +
+  theme(legend.text = element_text(size = 12, face = "bold"))
+boxplot 
 
-boxplotC<- ggplot(data=data1, aes(x=loc, y = d13C, color = Tissue)) +
-  geom_boxplot() +  
-  labs(x = "", y =  expression(paste(delta^"13", "C","(\211 VPBD)")))  +
-  scale_color_manual(labels = c("Muscle Tissue", "Stomach Contents"), values = c( "black", "green3"))
-boxplotC + theme_bw() + facet_grid(WDN ~ .) + theme(legend.position = "bottom", legend.title= element_blank()) +
-  scale_x_discrete(labels=c("Yolo Bypass" = "Yolo \n Bypass", "Sacramento" = "Sacramento \n River", "River Caged" = "Caged \nin Sac. River"))
+boxplotC<- ggplot(data=data1,aes(x=Site, y = d13C)) + 
+  geom_boxplot(aes(color = WDN), outlier.shape=NA, lwd = 0.8, position = position_dodge2(width=0.75, preserve = "single")) +
+  geom_point(position=position_jitterdodge(0.05), aes(group=WDN, fill=WDN), alpha = 0.3, pch = 21) +
+  labs(x = "", y =  expression(paste(delta^"13", "C ","(\211 VPBD)")))  +
+  theme_bw() + theme(legend.position = "bottom", legend.title= element_blank()) + 
+  scale_x_discrete(labels=c("Yolo Bypass" = "Yolo \n Bypass", "Sacramento" = "Sacramento \n River", "River Caged" = "Caged \nin Sac. River")) +
+  scale_color_manual(labels = c("Drought", "Average", "Wet"), values = c( "tomato2", "plum3", "steelblue2")) +
+  scale_fill_manual(labels = c("Drought", "Average", "Wet"), values = c( "tomato2", "plum3", "steelblue2")) +
+  theme(plot.title = element_text(hjust = 0.5),axis.text.x = element_text(face="bold", size=12, color = "black"),
+        axis.text.y = element_text(face="bold", size=12, color = "black"), axis.title.x = element_text(color="black", size =16, vjust=-0.35),
+        axis.title.y = element_text(color="black" , size = 12, vjust=0.35)) +
+  theme(legend.text = element_text(size = 12, face = "bold"))
+boxplotC 
 
-csboxplot<- plot_grid((boxplotC + theme_bw() + facet_grid(WDN ~ .) +  scale_x_discrete(labels=c("Yolo Bypass" = "Yolo Bypass", "Sacramento" = "Sacramento  River", "River Caged" = "Caged in Sac. River")) + theme(legend.position= "none")) , (boxplot + theme_bw() + facet_grid(WDN ~ .)+ theme(legend.position= "none") ), align = 'h', labels =c("A", "B"), nrow = 1 )
-csboxplot ##final figure
+legend_b <- get_legend(boxplotC + theme(legend.direction = "horizontal",legend.justification="center" ,legend.box.just = "bottom"))
+CSstomach<- plot_grid((boxplotC + theme(legend.position = "none")) , (boxplot + theme(legend.position = "none")),align = 'h', labels =c("A", "B"), nrow = 1)
+p<-plot_grid(CSstomach, legend_b, ncol = 1, rel_heights = c(1,.2))
+p
+ggsave(filename="Output/wdnplot_highres.png", plot=p, height=5, width=10, units="in", dpi=500)
 
 
 # Figure 5 ----------------------------------------------------------------
@@ -162,7 +195,7 @@ csboxplot ##final figure
 sulfurallyears<- ggplot (data5,aes(x= Day, y = d34S, color = Tissue)) + 
   geom_smooth (span = 0.75)  + geom_point() +
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
-  labs( y = expression(paste(delta^"34", "S","(\211 VCDT)"))) +
+  labs( y = expression(paste(delta^"34", "S ","(\211 VCDT)"))) +
   scale_color_manual(labels = c("Muscle Tissue", "Stomach Contents"), values = c( "black", "green3"))
 
 
@@ -174,7 +207,7 @@ sulfurallyears +
 
 carbonallyears<- ggplot (data5,aes(x= Day, y = d13C, color = Tissue)) + 
   geom_smooth (span = 0.75)  + geom_point() +
-  labs( y = expression(paste(delta^"13", "C","(\211 VPBD)"))) +
+  labs( y = expression(paste(delta^"13", "C ","(\211 VPBD)"))) +
   scale_color_manual(labels = c("Muscle Tissue", "Stomach Contents"), values = c( "black", "green3"))
 
 
@@ -186,6 +219,64 @@ carbonallyears +
 
 csdep<- plot_grid((carbonallyears + theme_bw() + facet_grid(Year ~ .) + theme(legend.position= "none")) , (sulfurallyears + theme_bw() + facet_grid(Year ~ .)+ theme(legend.position= "none") ), align = 'h', labels =c("A", "B"), nrow = 1 )
 csdep ##final figure
+ggsave(filename="Output/csdep.png", plot=csdep, height=5, width=10, units="in", dpi=500)
+
+# Figure 6 ----------------------------------------------------------------
+sac<-data
+sac<-sac[sac$Site !="San Joaquin",]
+sac<-sac[sac$subsite !="hatchery",]
+sac<-sac[sac$Site !="Sutter",]
+sac<-sac[sac$Tissue !="F",]
+sac<-sac[sac$Site !="Hatchery",]
+sac<-sac[sac$Tissue !="S",]
+sac<-sac[!(sac$week %in% c("1", "2", "3")),]
+
+sac<- sac %>% 
+  filter(! is.na(d34S) ) %>% 
+  filter(! is.na(d13C))
+
+loc<- factor(sac$Site, levels=c( "Sacramento", "River Caged", "Yolo Bypass", "Caged in Yolo Bypass"))
+levels(sac$Site) <- gsub(" ", "\n", levels(sac$Site))
+
+sacbox<- ggplot(data=sac,aes(x=loc, y = d34S)) + 
+  geom_boxplot( outlier.shape=NA, lwd=0.8) +
+  geom_point(position=position_jitterdodge(0.5),  alpha = 0.3, aes(fill=loc)) +
+  scale_color_manual(labels = c("dry", "normal", "wet"), values = c( "tomato2", "plum3", "steelblue2")) +
+  labs(x="", y = expression(paste(delta^"34", "S ","(\211 VCDT)"))) +
+  geom_hline(yintercept = 0, linetype="dashed", color ="black") +
+  theme_bw() + theme(legend.position = "bottom", legend.title= element_blank()) + 
+  scale_x_discrete(labels=c( "Yolo Bypass" = "Yolo \n Bypass",
+                             "Caged in Yolo Bypass" = "Caged \nin Yolo Bypass" ,
+                             "Sacramento" = "Sacramento \n River",
+                             "River Caged" = "Caged \nin Sac. River")) +
+  
+  theme(plot.title = element_text(hjust = 0.5),axis.text.x = element_text(face="bold", size=12, color = "black"),
+        axis.text.y = element_text(face="bold", size=12, color = "black"), axis.title.x = element_text(color="black", size =16, vjust=-0.35),
+        axis.title.y = element_text(color="black" , size = 14, vjust=0.35),
+        legend.position = "none") +
+  theme(legend.text = element_text(size = 12, face = "bold"))
+sacbox
+
+sacboxC<- ggplot(data=sac,aes(x=loc, y = d13C)) + 
+  geom_boxplot( outlier.shape=NA, lwd=0.8) +
+  geom_point(position=position_jitterdodge(0.5),  alpha = 0.3, aes(fill=loc)) +
+  labs(x = "", y =  expression(paste(delta^"13", "C ","(\211 VPBD)")))  +
+  theme_bw() + theme(legend.position = "bottom", legend.title= element_blank()) + 
+  scale_x_discrete(labels=c( "Yolo Bypass" = "Yolo \n Bypass",
+                             "Caged in Yolo Bypass" = "Caged \nin Yolo Bypass" ,
+                             "Sacramento" = "Sacramento \n River",
+                             "River Caged" = "Caged \nin Sac. River")) +
+  scale_color_manual(labels = c("dry", "normal", "wet"), values = c( "tomato2", "plum3", "steelblue2")) +
+  theme(plot.title = element_text(hjust = 0.5),axis.text.x = element_text(face="bold", size=12, color = "black"),
+        axis.text.y = element_text(face="bold", size=12, color = "black"), axis.title.x = element_text(color="black", size =16, vjust=-0.35),
+        axis.title.y = element_text(color="black" , size = 14, vjust=0.35),
+        legend.position = "none") +
+  theme(legend.text = element_text(size = 12, face = "bold"))
+sacboxC
+
+CSmus<- plot_grid(sacboxC , sacbox ,align = 'h', labels =c("A", "B"), nrow = 1)
+CSmus
+ggsave(filename="Output/csmus_highres.png", plot=CSmus, height=6, width=9, units="in", dpi=500)
 
 
 # lmer model --------------------------------------------------------------
@@ -328,7 +419,7 @@ p_salmon <- ggplot(data= salmon_data)+
   scale_fill_manual(values=c("firebrick","palegreen3","orange","steelblue", "grey"))+
   facet_rep_wrap(~Fish_ID, ncol=1, repeat.tick.labels = 'all')
 p_salmon
-ggsave(plot=p_salmon, "salmon_s_profiles.png", width = 6, height = 12)
+ggsave(plot=p_salmon, "Output/salmon_s_profiles.png", width = 6, height = 12)
 
 #Plot 2 Salmon S profiles
 p_salmon2 <- ggplot(data= salmon_data%>%filter(Fish_ID=="NP163500"|Fish_ID=="NP163668"))+
@@ -350,7 +441,7 @@ p_salmon2 <- ggplot(data= salmon_data%>%filter(Fish_ID=="NP163500"|Fish_ID=="NP1
   scale_fill_manual(values=c("firebrick","palegreen3","orange","steelblue", "grey"))+
   facet_rep_wrap(~Fish_ID, ncol=1, repeat.tick.labels = 'all')
 p_salmon2
-ggsave(plot=p_salmon2, "salmon2_s_profiles.png", width = 6, height = 6)
+ggsave(plot=p_salmon2, "Output/salmon2_s_profiles.png", width = 6, height = 6)
 
 #Tissue comparison
 salmon_tissue <- salmon_data %>%
@@ -385,7 +476,7 @@ p_tissue <- ggplot(data= salmon_tissue%>%filter(!Tissue=="Otolith"))+
                                            "NP163722" = "Floodplain3 (NP163722)")))+
   scale_y_continuous(name= expression(paste(delta^"34", "S"["Tissue"]," [??? VCDT]")),  breaks = scales::pretty_breaks(n = 10))
 p_tissue 
-ggsave(plot=p_tissue , "tissue_comparison.png", width = 5, height = 4)
+ggsave(plot=p_tissue , "Output/tissue_comparison.png", width = 5, height = 4)
 
 
 #Output
