@@ -1,0 +1,4 @@
+"Hab","Year","Tissue","mean_d13C","sd_d13C","n_d13C","mean_d15N","sd_d15N","n_d15N","mean_d34S","sd_d34S","n_d34S"
+"Yolo Bypass Enclosed",2014,"M",-30.74,0.73,5,11.01,0.42,5,-4.6,0.68,5
+"Yolo Bypass Enclosed",2015,"M",-29.66,0.77,9,10.73,0.41,9,-2.41,1.14,9
+"Yolo Bypass Enclosed",2016,"M",-34.74,0.49,5,12.07,0.16,5,-5.18,0.46,5
